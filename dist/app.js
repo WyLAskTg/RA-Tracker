@@ -161,6 +161,9 @@ function getOrCreateSemester(name) {
   }
   return semester;
 }
+function applicationMatchKey(application) {
+  return [application.professor, application.school].map(value => String(value || "").trim().toLowerCase().replace(/\s+/g," ")).join("::");
+}
 async function importExcel(file) {
   if (!ensureXlsx()) return;
   try {
@@ -203,9 +206,28 @@ async function importExcel(file) {
     if (!records.length) { alert("The workbook contains headers but no application rows."); return; }
     const semesterNames = [...new Set(records.map(record => record.semesterName))];
     const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Pending.` : "";
-    if (!confirm(`Import ${records.length} application(s) into ${semesterNames.length} semester(s)?${warning}`)) return;
-    records.forEach(record => getOrCreateSemester(record.semesterName).applications.push(record.application));
-    saveState(`${records.length} application${records.length===1?"":"s"} imported from Excel`);
+    if (!confirm(`Import ${records.length} application(s) into ${semesterNames.length} semester(s)? Existing matches will be enriched instead of duplicated.${warning}`)) return;
+    let added = 0, enriched = 0;
+    records.forEach(record => {
+      const applications = getOrCreateSemester(record.semesterName).applications;
+      const existing = applications.find(application => applicationMatchKey(application) === applicationMatchKey(record.application));
+      if (!existing) {
+        applications.push(record.application);
+        added++;
+        return;
+      }
+      let changed = false;
+      if ((!existing.field || existing.field === "Not specified") && record.application.field !== "Not specified") {
+        existing.field = record.application.field;
+        changed = true;
+      }
+      if (!existing.notes && record.application.notes) {
+        existing.notes = record.application.notes;
+        changed = true;
+      }
+      if (changed) enriched++;
+    });
+    saveState(`${added} added${enriched ? `, ${enriched} updated` : ""} from Excel`);
   } catch (error) {
     console.error(error);
     alert("The Excel file could not be read. Please check that it is a valid workbook and try again.");
