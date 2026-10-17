@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ra-tracker",
+  "account_id": "17669027394dbde361db7f8e554ef63f",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ra-tracker-db",
+      "database_id": "8841f615-3e13-410b-b59f-dcb1b562e3ed",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

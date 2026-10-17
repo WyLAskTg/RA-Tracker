@@ -1,16 +1,16 @@
 import Script from "next/script";
-import { chatGPTSignOutPath, requireChatGPTUser } from "./chatgpt-auth";
+import { requireUser } from "./auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const user = await requireChatGPTUser("/");
+  const user = await requireUser("/");
   return <>
     <header className="topbar">
       <a className="brand" href="#" aria-label="Research application tracker home"><span className="brand-mark">R</span><span>Research<br />Tracker</span></a>
       <div className="header-actions account-actions">
         <span className="account-email" title={user.email}>{user.displayName}</span>
-        <a className="button ghost outline-action account-button" href={chatGPTSignOutPath("/")} target="_top">Sign out</a>
+        <form action="/api/auth/logout" method="post"><button className="button ghost outline-action account-button" type="submit">Sign out</button></form>
         <button id="addSemesterBtn" className="button ghost outline-action positive-outline" type="button"><span aria-hidden="true">＋</span> New term</button>
       </div>
     </header>

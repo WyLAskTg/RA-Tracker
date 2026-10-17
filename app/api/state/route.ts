@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { getCurrentUser } from "../../auth";
 import { getDb } from "../../../db";
 import { userStates } from "../../../db/schema";
 
@@ -10,7 +10,7 @@ function unauthorized() {
 }
 
 export async function GET() {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser();
   if (!user) return unauthorized();
   const [record] = await getDb().select({ dataJson: userStates.dataJson, updatedAt: userStates.updatedAt }).from(userStates).where(eq(userStates.userId, user.userId)).limit(1);
   if (!record) return Response.json({ exists: false, state: null });
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser();
   if (!user) return unauthorized();
   const body = (await request.json().catch(() => null)) as { state?: unknown } | null;
   const state = body?.state;
