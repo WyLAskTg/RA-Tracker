@@ -90,6 +90,7 @@ tbody tr:hover { background:#faf9f3; }
 .toast { position:fixed; bottom:22px; left:50%; transform:translate(-50%,20px); background:var(--ink); color:white; border-radius:9px; padding:11px 16px; opacity:0; pointer-events:none; transition:.25s; z-index:50; }
 .toast.show { opacity:1; transform:translate(-50%,0); }
 @media (max-width:850px) {
+  .backup-action { display:none; }
   .hero-stamp { display:none; }
   .stats { grid-template-columns:1fr 1fr; }
   .stat:nth-child(2) { border-right:0; }
@@ -106,7 +107,12 @@ tbody tr:hover { background:#faf9f3; }
 }
 @media (max-width:600px) {
   .topbar { padding:0 15px; }
-  .header-actions .ghost { display:none; }
+  .header-actions .backup-action { display:none; }
+  .header-actions { gap:5px; }
+  .header-actions .button { padding:9px 10px; font-size:12px; }
+  .header-actions .excel-action { font-size:0; }
+  .header-actions #exportExcelBtn::after { content:"Export"; font-size:12px; }
+  .header-actions .import-label::after { content:"Import"; font-size:12px; }
   main { padding-inline:12px; }
   .hero { padding:43px 6px 34px; }
   h1 { font-size:39px; }

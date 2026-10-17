@@ -18,8 +18,10 @@
       <span>Research<br>Tracker</span>
     </a>
     <div class="header-actions">
-      <button id="exportBtn" class="button ghost" type="button" title="Export all data as JSON">Export</button>
-      <label class="button ghost import-label" title="Import a tracker JSON file">Import<input id="importInput" type="file" accept="application/json"></label>
+      <button id="exportExcelBtn" class="button ghost excel-action" type="button" title="Export all semesters to an Excel workbook">Export Excel</button>
+      <label class="button ghost import-label excel-action" title="Import applications from Excel">Import Excel<input id="importExcelInput" type="file" accept=".xlsx,.xls,.xlsb,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></label>
+      <button id="exportJsonBtn" class="button ghost backup-action" type="button" title="Export a JSON backup">JSON backup</button>
+      <label class="button ghost import-label backup-action" title="Restore a JSON backup">Restore<input id="importJsonInput" type="file" accept="application/json"></label>
       <button id="addApplicationBtn" class="button primary" type="button"><span aria-hidden="true">＋</span> Add application</button>
     </div>
   </header>
@@ -107,6 +109,7 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
