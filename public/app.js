@@ -270,11 +270,14 @@ async function importExcel(file) {
     parsedSheets.forEach(({sheetName,rows,header}) => {
       rows.slice(header.index + 1).forEach(row => {
         const read = key => header.mapping[key] === undefined ? "" : row[header.mapping[key]];
+        const provided = Object.fromEntries(["email","status","updated","field","notes","contactHistory"]
+          .map(key => [key, String(read(key) ?? "").trim() !== ""]));
         const rawValues = ["professor","email","school","status","updated","field","notes","contactHistory"].map(read);
         if (!rawValues.some(value => String(value ?? "").trim())) return;
         const status = normalizeStatus(read("status"));
         if (status.defaulted) defaultedStatuses++;
         records.push({
+          provided,
           application: {
             id:crypto.randomUUID(),
             professor:String(read("professor") ?? "").trim() || "Unknown professor",
@@ -291,8 +294,8 @@ async function importExcel(file) {
     });
     if (!records.length) { alert("The workbook contains headers but no application rows."); return; }
     const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Pending.` : "";
-    if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Existing matches will be enriched instead of duplicated.${warning}`)) return;
-    let added = 0, enriched = 0;
+    if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Filled Excel cells will update matching applications; blank cells will keep their current values.${warning}`)) return;
+    let added = 0, updated = 0;
     records.forEach(record => {
       const applications = targetSemester.applications;
       const existing = applications.find(application => applicationMatchKey(application) === applicationMatchKey(record.application));
@@ -302,25 +305,19 @@ async function importExcel(file) {
         return;
       }
       let changed = false;
-      if ((!existing.field || existing.field === "Not specified") && record.application.field !== "Not specified") {
-        existing.field = record.application.field;
-        changed = true;
+      for (const [column, field] of [["email","email"],["status","status"],["updated","updated"],["field","field"],["notes","notes"]]) {
+        if (record.provided[column] && existing[field] !== record.application[field]) {
+          existing[field] = record.application[field];
+          changed = true;
+        }
       }
-      if (!existing.notes && record.application.notes) {
-        existing.notes = record.application.notes;
-        changed = true;
-      }
-      if (!existing.email && record.application.email) {
-        existing.email = record.application.email;
-        changed = true;
-      }
-      if ((!existing.contactHistory || !existing.contactHistory.length) && record.application.contactHistory.length) {
+      if (record.provided.contactHistory && serializeContactHistory(existing.contactHistory) !== serializeContactHistory(record.application.contactHistory)) {
         existing.contactHistory = record.application.contactHistory;
         changed = true;
       }
-      if (changed) enriched++;
+      if (changed) updated++;
     });
-    saveState(`${added} added${enriched ? `, ${enriched} updated` : ""} from Excel`);
+    saveState(`${added} added${updated ? `, ${updated} updated` : ""} from Excel`);
   } catch (error) {
     console.error(error);
     alert("The Excel file could not be read. Please check that it is a valid workbook and try again.");
