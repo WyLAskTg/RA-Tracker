@@ -22,8 +22,7 @@ button, select { cursor: pointer; }
 .import-label.disabled { pointer-events:none; }
 .button.primary { background:var(--green); color:#fff; border-color:var(--green); }
 .button.ghost { background:transparent; }
-.outline-action { border-width:1px; box-shadow:0 0 0 .5px currentColor; }
-.button.outline-action:hover { box-shadow:0 0 0 .5px currentColor,0 5px 14px rgba(20,60,48,.10); }
+.outline-action { border-width:2px; }
 .positive-outline { color:var(--green); border-color:rgba(31,89,75,.48); }
 .positive-outline:hover { background:rgba(31,89,75,.055); }
 .import-label input { display:none; }
