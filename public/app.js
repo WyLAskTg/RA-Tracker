@@ -31,6 +31,15 @@ let draftContactHistory = [];
 let pendingDeleteSemesterId = null;
 const el = id => document.getElementById(id);
 
+function hideSyncStatus() {
+  el("syncStatus").hidden = true;
+  el("syncStatus").textContent = "";
+}
+function showSyncError(message) {
+  el("syncStatus").textContent = message;
+  el("syncStatus").hidden = false;
+}
+
 function loadLocalState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -46,14 +55,14 @@ function saveState(message) {
 }
 function queuePersistence() {
   const snapshot = JSON.stringify(state);
-  el("syncStatus").textContent = "Saving…";
+  hideSyncStatus();
   persistQueue = persistQueue.then(async () => {
     const response = await fetch(API_URL, { method:"PUT", headers:{"content-type":"application/json"}, body:JSON.stringify({state:JSON.parse(snapshot)}) });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Could not save your data.");
-    el("syncStatus").textContent = "Saved to your account";
+    hideSyncStatus();
   }).catch(error => {
     console.error(error);
-    el("syncStatus").textContent = "Save failed — changes remain on this device";
+    showSyncError("Save failed — changes remain on this device");
   });
 }
 async function initializeAccount() {
@@ -65,16 +74,16 @@ async function initializeAccount() {
     if (payload.exists && payload.state && Array.isArray(payload.state.semesters)) {
       state = payload.state;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      el("syncStatus").textContent = "Saved to your account";
+      hideSyncStatus();
     } else {
       state = local;
-      el("syncStatus").textContent = "Moving this device’s data to your account…";
+      hideSyncStatus();
       queuePersistence();
     }
   } catch (error) {
     console.error(error);
     state = loadLocalState();
-    el("syncStatus").textContent = "Offline mode — changes remain on this device";
+    showSyncError("Offline mode — changes remain on this device");
   }
   dataReady = true;
   render();
