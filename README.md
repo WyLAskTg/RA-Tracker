@@ -50,7 +50,7 @@ For Workers Builds with GitHub, use:
 
 - Build command: `pnpm run build`
 - Deploy command: `pnpm run deploy`
-- Preview command: `npx wrangler versions upload --config dist/server/wrangler.json`
+- Preview command: `pnpm run preview`
 
 Every push to the production branch can then trigger a new Cloudflare build and deployment.
 
