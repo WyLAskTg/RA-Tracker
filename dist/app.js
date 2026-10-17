@@ -50,6 +50,13 @@ function normalizeHeader(value) {
   return String(value ?? "").trim().toLowerCase().replace(/[\s_\-–—./\\()[\]:]+/g, "");
 }
 const NORMALIZED_ALIASES = Object.fromEntries(Object.entries(HEADER_ALIASES).map(([key, values]) => [key, values.map(normalizeHeader)]));
+function looksLikeResearchFieldHeader(value) {
+  const text = String(value ?? "").trim().toLowerCase();
+  const tokens = text.split(/[^a-z0-9\u3400-\u9fff]+/).filter(Boolean);
+  const hasResearch = tokens.some(token => token === "research" || token.startsWith("research") || token.includes("研究"));
+  const meaningTokens = new Set(tokens.filter(token => ["field","area","fit","interest","interests","topic","focus","domain","specialty","specialisation","specialization"].includes(token) || /领域|方向|兴趣|主题|匹配/.test(token)));
+  return (hasResearch && meaningTokens.size >= 1) || meaningTokens.size >= 2 || /研究(领域|方向|兴趣|主题|匹配)/.test(text);
+}
 function mapHeaderRow(row) {
   const mapping = {};
   row.forEach((value, index) => {
@@ -58,6 +65,10 @@ function mapHeaderRow(row) {
       if (mapping[field] === undefined && aliases.includes(normalized)) mapping[field] = index;
     }
   });
+  if (mapping.field === undefined) {
+    const fieldIndex = row.findIndex(looksLikeResearchFieldHeader);
+    if (fieldIndex >= 0) mapping.field = fieldIndex;
+  }
   return mapping;
 }
 function findHeader(rows) {
@@ -231,11 +242,12 @@ function renderRows(apps) {
     return b.updated.localeCompare(a.updated);
   });
   el("applicationRows").innerHTML = visible.map(a => `<tr>
-    <td data-label="Professor"><div class="person">${escapeHtml(a.professor)}</div>${a.notes?`<div class="notes-preview" title="${escapeHtml(a.notes)}">${escapeHtml(a.notes)}</div>`:""}</td>
+    <td data-label="Professor"><div class="person">${escapeHtml(a.professor)}</div></td>
     <td data-label="Institution">${escapeHtml(a.school)}</td>
     <td data-label="Status"><span class="badge ${slugStatus(a.status)}">${escapeHtml(a.status)}</span></td>
     <td data-label="Last updated">${formatDate(a.updated)}</td>
     <td data-label="Research field">${escapeHtml(a.field)}</td>
+    <td data-label="Notes" class="notes-cell">${a.notes ? escapeHtml(a.notes) : "—"}</td>
     <td data-label="Actions"><div class="row-actions"><button class="row-button edit-button" data-id="${a.id}" title="Edit" aria-label="Edit ${escapeHtml(a.professor)}">✎</button><button class="row-button delete-button" data-id="${a.id}" title="Delete" aria-label="Delete ${escapeHtml(a.professor)}">⊗</button></div></td>
   </tr>`).join("");
   const isActuallyEmpty = apps.length === 0;

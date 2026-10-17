@@ -58,7 +58,7 @@ tr:last-child td { border-bottom:0; }
 tbody tr { transition:background .15s; }
 tbody tr:hover { background:#faf9f3; }
 .person { font-weight:800; }
-.notes-preview { font-size:12px; color:var(--muted); margin-top:5px; max-width:250px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+.notes-cell { color:var(--muted); min-width:180px; max-width:320px; white-space:normal; overflow-wrap:anywhere; line-height:1.45; }
 .badge { display:inline-flex; align-items:center; gap:7px; border-radius:99px; padding:6px 9px; font-size:11px; font-weight:800; white-space:nowrap; }
 .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
 .status-pending { color:#8a651d; background:#fff0bd; }
