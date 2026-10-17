@@ -72,7 +72,7 @@ Do not edit or replay a migration that has already been applied to production. A
 
 - Email addresses are normalized to lowercase.
 - Passwords must contain 10–128 characters.
-- Sessions expire after 30 days.
+- Sessions persist on the same device for up to one year.
 - Application data remains separated by the authenticated user ID.
 - Signing out invalidates the current server-side session.
 

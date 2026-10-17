@@ -5,8 +5,9 @@ import { getDb } from "../db";
 import { sessions, users } from "../db/schema";
 
 const SESSION_COOKIE = "ra_tracker_session";
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 310_000;
+const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 365;
+// Cloudflare Workers Web Crypto currently caps PBKDF2 at 100,000 iterations.
+const PASSWORD_ITERATIONS = 100_000;
 const encoder = new TextEncoder();
 
 export type AuthUser = {
