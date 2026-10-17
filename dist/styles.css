@@ -126,11 +126,8 @@ tbody tr:hover { background:#faf9f3; }
 }
 @media (max-width:600px) {
   .topbar { padding:0 15px; }
-  .header-actions .backup-action { display:none; }
   .header-actions { gap:5px; }
   .header-actions .button { padding:9px 10px; font-size:12px; }
-  .header-actions .excel-action { font-size:0; }
-  .header-actions #exportExcelBtn::after { content:"Export"; font-size:12px; }
   main { padding-inline:12px; }
   main { padding-top:20px; }
   .semester-bar { padding:22px; align-items:start; gap:15px; }

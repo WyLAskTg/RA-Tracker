@@ -18,10 +18,7 @@
       <span>Research<br>Tracker</span>
     </a>
     <div class="header-actions">
-      <button id="exportExcelBtn" class="button ghost excel-action" type="button" title="Export all semesters to an Excel workbook">Export Excel</button>
-      <button id="exportJsonBtn" class="button ghost backup-action" type="button" title="Export a JSON backup">JSON backup</button>
-      <label class="button ghost import-label backup-action" title="Restore a JSON backup">Restore<input id="importJsonInput" type="file" accept="application/json"></label>
-      <button id="addApplicationBtn" class="button primary" type="button"><span aria-hidden="true">＋</span> Add application</button>
+      <button id="addSemesterBtn" class="button primary" type="button"><span aria-hidden="true">＋</span> New term</button>
     </div>
   </header>
 
@@ -37,7 +34,7 @@
         </div>
         <div class="semester-actions">
           <label id="importExcelLabel" class="text-button import-label" title="Import applications into the active term">Import Excel<input id="importExcelInput" type="file" accept=".xlsx,.xls,.xlsb,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></label>
-          <button id="addSemesterBtn" class="text-button" type="button">＋ New semester</button>
+          <button id="addApplicationBtn" class="button primary compact-button" type="button"><span aria-hidden="true">＋</span> Add application</button>
           <button id="deleteSemesterBtn" class="text-button danger-text" type="button">Delete term</button>
         </div>
       </div>
@@ -105,7 +102,7 @@
 
   <dialog id="semesterDialog" class="modal small-modal">
     <form id="semesterForm" method="dialog">
-      <div class="modal-head"><div><p class="section-label">TERM</p><h2 id="semesterDialogTitle">New semester</h2></div></div>
+      <div class="modal-head"><div><p class="section-label">TERM</p><h2 id="semesterDialogTitle">New term</h2></div></div>
       <label>Semester name<input id="semesterNameInput" required maxlength="60" placeholder="e.g. Fall 2026"></label>
       <div class="modal-actions"><button type="button" class="button ghost dialog-close">Cancel</button><button type="submit" class="button primary" value="default">Save semester</button></div>
     </form>
