@@ -33,6 +33,8 @@ The local server normally runs at `http://127.0.0.1:8787`.
 
 Cloudflare configuration lives in `wrangler.jsonc`. It binds `DB` to the `ra-tracker-db` D1 database.
 
+Production is served from `https://ratracker.app`. The `workers.dev` route remains enabled as a fallback.
+
 Apply production migrations before the first deployment and whenever a new migration is added:
 
 ```bash
