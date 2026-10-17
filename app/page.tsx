@@ -33,6 +33,12 @@ export default async function Home() {
 
     <dialog id="semesterDialog" className="modal small-modal"><form id="semesterForm" method="dialog"><div className="modal-head"><div><p className="section-label">TERM</p><h2 id="semesterDialogTitle">New term</h2></div></div><label>Semester name<input id="semesterNameInput" required maxLength={60} placeholder="e.g. Fall 2026" /></label><div className="modal-actions"><button type="button" className="button ghost dialog-close">Cancel</button><button type="submit" className="button primary" value="default">Save semester</button></div></form></dialog>
 
+    <dialog id="deleteSemesterDialog" className="modal confirm-modal" aria-labelledby="deleteSemesterTitle" aria-describedby="deleteSemesterDescription"><div className="confirm-dialog-content">
+      <div className="confirm-icon" aria-hidden="true">!</div>
+      <div><p className="section-label">DELETE TERM</p><h2 id="deleteSemesterTitle">Delete this term?</h2><p id="deleteSemesterDescription" className="confirm-description">This term and all of its applications will be permanently deleted. This action cannot be undone.</p></div>
+      <div className="modal-actions"><button id="cancelDeleteSemesterBtn" type="button" className="button ghost dialog-close">Cancel</button><button id="confirmDeleteSemesterBtn" type="button" className="button danger-primary">Delete term</button></div>
+    </div></dialog>
+
     <aside id="reminderPanel" className="reminder-panel" aria-live="polite" hidden><button id="closeReminderBtn" className="reminder-close" type="button" aria-label="Close follow-up reminders">×</button><p className="section-label">FOLLOW-UP REMINDER</p><h2 id="reminderTitle">Applications need attention</h2><div id="reminderList" className="reminder-list"></div></aside>
     <div id="toast" className="toast" role="status" aria-live="polite"></div>
     <Script src="/xlsx.full.min.js" strategy="beforeInteractive" /><Script src="/app.js" strategy="afterInteractive" />

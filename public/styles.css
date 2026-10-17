@@ -37,6 +37,8 @@ main { padding: 44px clamp(18px, 5vw, 72px) 70px; }
 .term-action { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:10px 14px; font-size:14px; line-height:1; white-space:nowrap; }
 .danger-button { color:#a74747; border-color:rgba(167,71,71,.35); }
 .danger-button:hover { background:rgba(167,71,71,.06); box-shadow:0 5px 14px rgba(167,71,71,.10); }
+.button.danger-primary { color:#fff; background:#a74747; border-color:#a74747; }
+.button.danger-primary:hover { background:#923b3b; border-color:#923b3b; box-shadow:0 6px 16px rgba(167,71,71,.2); }
 .text-button { border:0; background:transparent; color:var(--green); font-weight:800; padding:6px 0; }
 .danger-text { color:#a74747; }
 .stats { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }
@@ -109,6 +111,12 @@ tbody tr:hover { background:#faf9f3; }
 .history-remove { border:0; background:transparent; color:#9a5c5c; font-size:17px; line-height:1; }
 .modal-actions { display:flex; justify-content:flex-end; gap:9px; padding-top:23px; }
 .small-modal { width:min(450px,calc(100% - 28px)); }
+.confirm-modal { width:min(470px,calc(100% - 28px)); }
+.confirm-dialog-content { display:grid; grid-template-columns:48px 1fr; gap:16px; padding:28px; }
+.confirm-dialog-content .section-label { margin-bottom:8px; color:#9a5a55; }
+.confirm-icon { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; background:#fae5e2; color:#a74747; font:800 23px Manrope,sans-serif; }
+.confirm-description { margin:9px 0 0; color:var(--muted); font-size:14px; line-height:1.55; }
+.confirm-dialog-content .modal-actions { grid-column:1/-1; padding-top:8px; }
 .toast { position:fixed; bottom:22px; left:50%; transform:translate(-50%,20px); background:var(--ink); color:white; border-radius:9px; padding:11px 16px; opacity:0; pointer-events:none; transition:.25s; z-index:50; }
 .toast.show { opacity:1; transform:translate(-50%,0); }
 .account-actions { display:flex; align-items:center; gap:10px; }

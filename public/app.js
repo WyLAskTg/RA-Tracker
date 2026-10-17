@@ -28,6 +28,7 @@ let dataReady = false;
 let persistQueue = Promise.resolve();
 let semesterMode = "add";
 let draftContactHistory = [];
+let pendingDeleteSemesterId = null;
 const el = id => document.getElementById(id);
 
 function loadLocalState() {
@@ -479,10 +480,24 @@ el("semesterForm").addEventListener("submit", event => {
 el("deleteSemesterBtn").addEventListener("click", () => {
   const semester = activeSemester();
   if (!semester) return;
-  if (confirm(`Delete ${semester.name} and all ${semester.applications.length} of its applications?`)) {
-    state.semesters = state.semesters.filter(s => s.id !== semester.id); state.activeSemesterId=state.semesters[0]?.id || null; saveState("Term deleted");
-  }
+  pendingDeleteSemesterId = semester.id;
+  el("deleteSemesterTitle").textContent = `Delete ${semester.name}?`;
+  const applicationLabel = semester.applications.length === 1 ? "application" : "applications";
+  el("deleteSemesterDescription").textContent = `This will permanently delete this term and its ${semester.applications.length} ${applicationLabel}. This action cannot be undone.`;
+  el("deleteSemesterDialog").showModal();
+  el("cancelDeleteSemesterBtn").focus();
 });
+el("confirmDeleteSemesterBtn").addEventListener("click", () => {
+  if (!pendingDeleteSemesterId) return;
+  const semester = state.semesters.find(item => item.id === pendingDeleteSemesterId);
+  if (!semester) { el("deleteSemesterDialog").close(); return; }
+  state.semesters = state.semesters.filter(item => item.id !== pendingDeleteSemesterId);
+  state.activeSemesterId = state.semesters[0]?.id || null;
+  pendingDeleteSemesterId = null;
+  el("deleteSemesterDialog").close();
+  saveState("Term deleted");
+});
+el("deleteSemesterDialog").addEventListener("close", () => { pendingDeleteSemesterId = null; });
 el("importExcelInput").addEventListener("change", async event => {
   const file = event.target.files[0];
   if (file) await importExcel(file);
