@@ -1,16 +1,18 @@
 const STATUSES = [
   "Pending", "Follow-up sent", "Rejected-No response", "Rejected-No position",
-  "Rejected-Weak background", "Positive-funded", "Positive-unfunded"
+  "Rejected-Weak background", "Positive-funded", "Positive-unfunded", "Withdrawn"
 ];
 const STORAGE_KEY = "research-application-tracker-v1";
-const EXCEL_HEADERS = ["Professor", "School", "Status", "Last Updated", "Research Field", "Notes", "Semester"];
+const EXCEL_HEADERS = ["Professor", "Email", "School", "Status", "Last Updated", "Research Field", "Notes", "Contact History", "Semester"];
 const HEADER_ALIASES = {
   professor: ["professor", "professor name", "faculty", "faculty name", "pi", "advisor", "supervisor", "contact", "教授", "教授名", "导师"],
+  email: ["email", "email address", "professor email", "faculty email", "contact email", "e-mail", "邮箱", "电子邮箱", "教授邮箱"],
   school: ["school", "institution", "university", "college", "affiliation", "学校", "院校", "大学"],
   status: ["status", "current status", "application status", "progress", "state", "状态", "当前状态", "进度"],
   updated: ["last updated", "updated", "update date", "last contact", "contact date", "date", "最近更新日期", "更新日期", "日期"],
   field: ["research field", "research area", "field", "area", "topic", "research interests", "研究领域", "研究方向", "方向"],
   notes: ["notes", "note", "comments", "comment", "remarks", "details", "备注", "记录"],
+  contactHistory: ["contact history", "communication history", "interaction history", "联系记录", "联系历史"],
   semester: ["semester", "term", "cycle", "application term", "学期", "申请学期"]
 };
 
@@ -21,6 +23,7 @@ const defaultState = () => ({
 
 let state = loadState();
 let semesterMode = "add";
+let draftContactHistory = [];
 const el = id => document.getElementById(id);
 
 function loadState() {
@@ -45,6 +48,15 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("en", {year:"numeric",month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(value + "T00:00:00Z"));
 }
 function today() { return new Date().toLocaleDateString("en-CA"); }
+function serializeContactHistory(history = []) {
+  return history.map(item => `${item.date || ""} | ${item.type || "Other"} | ${item.summary || ""}`).join("\n");
+}
+function parseContactHistory(value) {
+  return String(value ?? "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    const [date,type,...summary] = line.split("|").map(part => part.trim());
+    return { id:crypto.randomUUID(), date:normalizeExcelDate(date), type:type || "Other", summary:summary.join(" | ") || line };
+  });
+}
 
 function normalizeHeader(value) {
   return String(value ?? "").trim().toLowerCase().replace(/[\s_\-–—./\\()[\]:]+/g, "");
@@ -86,6 +98,7 @@ function normalizeStatus(value) {
   const compact = raw.toLowerCase().replace(/[^a-z0-9]+/g, "");
   const exact = STATUSES.find(status => status.toLowerCase().replace(/[^a-z0-9]+/g, "") === compact);
   if (exact) return { value: exact, defaulted: false };
+  if (raw.includes("放弃") || compact.includes("withdraw") || compact.includes("abandon") || compact.includes("cancelled") || compact.includes("canceled")) return { value: "Withdrawn", defaulted: false };
   if (compact.includes("followup")) return { value: "Follow-up sent", defaulted: false };
   if (compact.includes("noresponse") || compact.includes("ghost")) return { value: "Rejected-No response", defaulted: false };
   if (compact.includes("noposition") || compact.includes("noopening") || compact.includes("unavailable")) return { value: "Rejected-No position", defaulted: false };
@@ -131,19 +144,21 @@ function exportExcel() {
   state.semesters.forEach(semester => {
     const rows = semester.applications.map(app => ({
       "Professor": app.professor,
+      "Email": app.email || "",
       "School": app.school,
       "Status": app.status,
       "Last Updated": app.updated ? new Date(`${app.updated}T00:00:00`) : "",
       "Research Field": app.field,
       "Notes": app.notes || "",
+      "Contact History": serializeContactHistory(app.contactHistory),
       "Semester": semester.name
     }));
     const sheet = XLSX.utils.json_to_sheet(rows, { header: EXCEL_HEADERS });
-    sheet["!cols"] = [{wch:24},{wch:28},{wch:28},{wch:15},{wch:28},{wch:45},{wch:16}];
+    sheet["!cols"] = [{wch:24},{wch:30},{wch:28},{wch:28},{wch:15},{wch:28},{wch:45},{wch:55},{wch:16}];
     if (sheet["!ref"]) {
       const range = XLSX.utils.decode_range(sheet["!ref"]);
       for (let row = 1; row <= range.e.r; row++) {
-        const cell = sheet[XLSX.utils.encode_cell({r:row,c:3})];
+        const cell = sheet[XLSX.utils.encode_cell({r:row,c:4})];
         if (cell?.v instanceof Date) cell.z = "yyyy-mm-dd";
       }
     }
@@ -183,7 +198,7 @@ async function importExcel(file) {
     parsedSheets.forEach(({sheetName,rows,header}) => {
       rows.slice(header.index + 1).forEach(row => {
         const read = key => header.mapping[key] === undefined ? "" : row[header.mapping[key]];
-        const rawValues = ["professor","school","status","updated","field","notes"].map(read);
+        const rawValues = ["professor","email","school","status","updated","field","notes","contactHistory"].map(read);
         if (!rawValues.some(value => String(value ?? "").trim())) return;
         const status = normalizeStatus(read("status"));
         if (status.defaulted) defaultedStatuses++;
@@ -194,11 +209,13 @@ async function importExcel(file) {
           application: {
             id:crypto.randomUUID(),
             professor:String(read("professor") ?? "").trim() || "Unknown professor",
+            email:String(read("email") ?? "").trim(),
             school:String(read("school") ?? "").trim() || "Unknown school",
             status:status.value,
             updated:normalizeExcelDate(read("updated")),
             field:String(read("field") ?? "").trim() || "Not specified",
-            notes:String(read("notes") ?? "").trim()
+            notes:String(read("notes") ?? "").trim(),
+            contactHistory:parseContactHistory(read("contactHistory"))
           }
         });
       });
@@ -225,6 +242,14 @@ async function importExcel(file) {
         existing.notes = record.application.notes;
         changed = true;
       }
+      if (!existing.email && record.application.email) {
+        existing.email = record.application.email;
+        changed = true;
+      }
+      if ((!existing.contactHistory || !existing.contactHistory.length) && record.application.contactHistory.length) {
+        existing.contactHistory = record.application.contactHistory;
+        changed = true;
+      }
       if (changed) enriched++;
     });
     saveState(`${added} added${enriched ? `, ${enriched} updated` : ""} from Excel`);
@@ -244,7 +269,7 @@ function render() {
 function renderStats(apps) {
   const positive = apps.filter(a => a.status.startsWith("Positive")).length;
   const waiting = apps.filter(a => ["Pending","Follow-up sent"].includes(a.status)).length;
-  const rejected = apps.filter(a => a.status.startsWith("Rejected")).length;
+  const rejected = apps.filter(a => a.status.startsWith("Rejected") || a.status === "Withdrawn").length;
   el("stats").innerHTML = [
     [apps.length,"Total applications"], [waiting,"Awaiting response"], [positive,"Positive replies"], [rejected,"Closed / rejected"]
   ].map(([value,label]) => `<div class="stat"><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div>`).join("");
@@ -254,7 +279,8 @@ function renderRows(apps) {
   const filter = el("statusFilter").value;
   const sort = el("sortSelect").value;
   let visible = apps.filter(a => {
-    const haystack = [a.professor,a.school,a.field,a.notes].join(" ").toLowerCase();
+    const historyText = (a.contactHistory || []).map(item => `${item.type} ${item.summary}`).join(" ");
+    const haystack = [a.professor,a.email,a.school,a.field,a.notes,historyText].join(" ").toLowerCase();
     return (!query || haystack.includes(query)) && (filter === "all" || a.status === filter);
   });
   visible.sort((a,b) => {
@@ -265,12 +291,13 @@ function renderRows(apps) {
   });
   el("applicationRows").innerHTML = visible.map(a => `<tr>
     <td data-label="Professor"><div class="person">${escapeHtml(a.professor)}</div></td>
+    <td data-label="Email">${a.email ? `<a class="email-link" href="mailto:${escapeHtml(a.email)}">${escapeHtml(a.email)}</a>` : "—"}</td>
     <td data-label="Institution">${escapeHtml(a.school)}</td>
     <td data-label="Status"><span class="badge ${slugStatus(a.status)}">${escapeHtml(a.status)}</span></td>
     <td data-label="Last updated">${formatDate(a.updated)}</td>
     <td data-label="Research field">${escapeHtml(a.field)}</td>
     <td data-label="Notes" class="notes-cell">${a.notes ? escapeHtml(a.notes) : "—"}</td>
-    <td data-label="Actions"><div class="row-actions"><button class="row-button edit-button" data-id="${a.id}" title="Edit" aria-label="Edit ${escapeHtml(a.professor)}">✎</button><button class="row-button delete-button" data-id="${a.id}" title="Delete" aria-label="Delete ${escapeHtml(a.professor)}">⊗</button></div></td>
+    <td data-label="Actions"><div class="row-actions"><button class="row-button history-button" data-id="${a.id}" title="Contact history" aria-label="Contact history for ${escapeHtml(a.professor)}">◷</button><button class="row-button edit-button" data-id="${a.id}" title="Edit" aria-label="Edit ${escapeHtml(a.professor)}">✎</button><button class="row-button delete-button" data-id="${a.id}" title="Delete" aria-label="Delete ${escapeHtml(a.professor)}">⊗</button></div></td>
   </tr>`).join("");
   const isActuallyEmpty = apps.length === 0;
   el("emptyState").hidden = visible.length !== 0;
@@ -279,18 +306,30 @@ function renderRows(apps) {
   el("emptyState").querySelector("button").hidden = !isActuallyEmpty;
 }
 
-function openApplication(id = null) {
+function renderContactHistory() {
+  const sorted = [...draftContactHistory].sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+  el("contactHistoryList").innerHTML = sorted.length ? sorted.map(item => `<div class="history-item">
+    <div class="history-date">${formatDate(item.date)}</div><div class="history-type">${escapeHtml(item.type)}</div>
+    <div class="history-summary">${escapeHtml(item.summary)}</div>
+    <button class="history-remove" type="button" data-history-id="${item.id}" aria-label="Remove contact entry">×</button>
+  </div>`).join("") : `<div class="history-empty">No contact history yet.</div>`;
+}
+function openApplication(id = null, focusHistory = false) {
   const app = id ? activeSemester().applications.find(a => a.id === id) : null;
   el("applicationDialogTitle").textContent = app ? "Edit application" : "Add application";
   el("applicationId").value = app?.id || "";
   el("professorInput").value = app?.professor || "";
   el("schoolInput").value = app?.school || "";
+  el("emailInput").value = app?.email || "";
   el("applicationStatus").value = app?.status || "Pending";
   el("dateInput").value = app?.updated || today();
   el("fieldInput").value = app?.field || "";
   el("notesInput").value = app?.notes || "";
+  draftContactHistory = (app?.contactHistory || []).map(item => ({...item}));
+  el("contactComposer").hidden = true;
+  renderContactHistory();
   el("applicationDialog").showModal();
-  setTimeout(() => el("professorInput").focus(), 50);
+  setTimeout(() => focusHistory ? el("historyTitle").scrollIntoView({behavior:"smooth",block:"start"}) : el("professorInput").focus(), 50);
 }
 function toast(message) {
   el("toast").textContent = message;
@@ -309,7 +348,7 @@ el("applicationForm").addEventListener("submit", event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const id = el("applicationId").value;
-  const record = { id:id || crypto.randomUUID(), professor:el("professorInput").value.trim(), school:el("schoolInput").value.trim(), status:el("applicationStatus").value, updated:el("dateInput").value, field:el("fieldInput").value.trim(), notes:el("notesInput").value.trim() };
+  const record = { id:id || crypto.randomUUID(), professor:el("professorInput").value.trim(), email:el("emailInput").value.trim(), school:el("schoolInput").value.trim(), status:el("applicationStatus").value, updated:el("dateInput").value, field:el("fieldInput").value.trim(), notes:el("notesInput").value.trim(), contactHistory:draftContactHistory };
   const apps = activeSemester().applications;
   const index = apps.findIndex(a => a.id === id);
   if (index >= 0) apps[index] = record; else apps.push(record);
@@ -318,8 +357,10 @@ el("applicationForm").addEventListener("submit", event => {
 });
 el("applicationRows").addEventListener("click", event => {
   const edit = event.target.closest(".edit-button");
+  const history = event.target.closest(".history-button");
   const remove = event.target.closest(".delete-button");
   if (edit) openApplication(edit.dataset.id);
+  if (history) openApplication(history.dataset.id, true);
   if (remove) {
     const app = activeSemester().applications.find(a => a.id === remove.dataset.id);
     if (app && confirm(`Delete the application for ${app.professor}?`)) {
@@ -327,6 +368,28 @@ el("applicationRows").addEventListener("click", event => {
       saveState("Application deleted");
     }
   }
+});
+el("showContactComposerBtn").addEventListener("click", () => {
+  el("contactComposer").hidden = false;
+  el("contactDateInput").value = today();
+  el("contactTypeInput").value = "Initial email";
+  el("contactSummaryInput").value = "";
+  el("contactSummaryInput").focus();
+});
+el("cancelContactBtn").addEventListener("click", () => { el("contactComposer").hidden = true; });
+el("addContactBtn").addEventListener("click", () => {
+  const date = el("contactDateInput").value;
+  const summary = el("contactSummaryInput").value.trim();
+  if (!date || !summary) { alert("Add a date and a short summary for this contact."); return; }
+  draftContactHistory.push({ id:crypto.randomUUID(), date, type:el("contactTypeInput").value, summary });
+  el("contactComposer").hidden = true;
+  renderContactHistory();
+});
+el("contactHistoryList").addEventListener("click", event => {
+  const remove = event.target.closest(".history-remove");
+  if (!remove) return;
+  draftContactHistory = draftContactHistory.filter(item => item.id !== remove.dataset.historyId);
+  renderContactHistory();
 });
 ["searchInput","statusFilter","sortSelect"].forEach(id => el(id).addEventListener(id==="searchInput"?"input":"change", () => renderRows(activeSemester().applications)));
 el("semesterSelect").addEventListener("change", event => { state.activeSemesterId = event.target.value; saveState(); });

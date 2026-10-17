@@ -27,17 +27,6 @@
   </header>
 
   <main>
-    <section class="hero">
-      <p class="eyebrow">ACADEMIC OUTREACH</p>
-      <div class="hero-row">
-        <div>
-          <h1>Your research journey,<br><em>beautifully organized.</em></h1>
-          <p class="subtitle">Keep every professor, follow-up, and opportunity in one calm workspace.</p>
-        </div>
-        <div class="hero-stamp" aria-hidden="true"><span>✦</span> Stay curious<br>Stay consistent</div>
-      </div>
-    </section>
-
     <section class="workspace" aria-labelledby="semesterHeading">
       <div class="semester-bar">
         <div>
@@ -58,7 +47,7 @@
       <div class="toolbar">
         <label class="search-wrap">
           <span aria-hidden="true">⌕</span>
-          <input id="searchInput" type="search" placeholder="Search professor, school, or field…" aria-label="Search applications">
+          <input id="searchInput" type="search" placeholder="Search professor, email, school, or field…" aria-label="Search applications">
         </label>
         <select id="statusFilter" aria-label="Filter by status"><option value="all">All statuses</option></select>
         <select id="sortSelect" aria-label="Sort applications">
@@ -71,7 +60,7 @@
 
       <div class="table-shell">
         <table>
-          <thead><tr><th>Professor</th><th>Institution</th><th>Status</th><th>Last updated</th><th>Research field</th><th>Notes</th><th aria-label="Actions"></th></tr></thead>
+          <thead><tr><th>Professor</th><th>Email</th><th>Institution</th><th>Status</th><th>Last updated</th><th>Research field</th><th>Notes</th><th aria-label="Actions"></th></tr></thead>
           <tbody id="applicationRows"></tbody>
         </table>
         <div id="emptyState" class="empty-state" hidden>
@@ -91,10 +80,24 @@
       <div class="form-grid">
         <label>Professor name<input id="professorInput" required maxlength="100" placeholder="e.g. Dr. Jane Smith"></label>
         <label>School<input id="schoolInput" required maxlength="120" placeholder="e.g. University of Toronto"></label>
+        <label class="full">Professor email<input id="emailInput" type="email" maxlength="160" placeholder="e.g. professor@university.edu"></label>
         <label class="full">Current status<select id="applicationStatus" required></select></label>
         <label>Last updated<input id="dateInput" type="date" required></label>
         <label>Research field<input id="fieldInput" required maxlength="120" placeholder="e.g. Human–computer interaction"></label>
         <label class="full">Notes<textarea id="notesInput" rows="4" maxlength="1200" placeholder="Add context, next steps, or email details…"></textarea></label>
+        <section class="history-section full" aria-labelledby="historyTitle">
+          <div class="history-head">
+            <div><p class="section-label">CONTACT HISTORY</p><h3 id="historyTitle">Interactions</h3></div>
+            <button id="showContactComposerBtn" class="button ghost compact-button" type="button">＋ Add contact</button>
+          </div>
+          <div id="contactComposer" class="contact-composer" hidden>
+            <label>Date<input id="contactDateInput" type="date"></label>
+            <label>Type<select id="contactTypeInput"><option>Initial email</option><option>Follow-up</option><option>Reply received</option><option>Meeting</option><option>Other</option></select></label>
+            <label class="contact-summary">Summary<input id="contactSummaryInput" maxlength="300" placeholder="What happened?"></label>
+            <div class="composer-actions"><button id="cancelContactBtn" class="text-button" type="button">Cancel</button><button id="addContactBtn" class="button primary compact-button" type="button">Add to history</button></div>
+          </div>
+          <div id="contactHistoryList" class="history-list"></div>
+        </section>
       </div>
       <div class="modal-actions"><button class="button ghost" value="cancel" formnovalidate>Cancel</button><button id="saveApplicationBtn" class="button primary" value="default">Save application</button></div>
     </form>
