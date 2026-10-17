@@ -29,7 +29,7 @@ const el = id => document.getElementById(id);
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved?.semesters?.length) return saved;
+    if (saved && Array.isArray(saved.semesters)) return saved;
   } catch (_) {}
   return defaultState();
 }
@@ -39,7 +39,7 @@ function saveState(message) {
   if (message) toast(message);
 }
 function activeSemester() {
-  return state.semesters.find(s => s.id === state.activeSemesterId) || state.semesters[0];
+  return state.semesters.find(s => s.id === state.activeSemesterId) || state.semesters[0] || null;
 }
 function slugStatus(status) { return "status-" + status.toLowerCase().replace(/[^a-z]+/g,"-").replace(/(^-|-$)/g,""); }
 function escapeHtml(value = "") { return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
@@ -167,20 +167,16 @@ function exportExcel() {
   XLSX.writeFile(workbook, `research-applications-${today()}.xlsx`, { compression:true, cellDates:true });
   toast("Excel workbook exported");
 }
-function getOrCreateSemester(name) {
-  const clean = String(name || activeSemester().name).trim() || activeSemester().name;
-  let semester = state.semesters.find(item => item.name.toLowerCase() === clean.toLowerCase());
-  if (!semester) {
-    semester = { id:crypto.randomUUID(), name:clean.slice(0,60), applications:[] };
-    state.semesters.push(semester);
-  }
-  return semester;
-}
 function applicationMatchKey(application) {
   return [application.professor, application.school].map(value => String(value || "").trim().toLowerCase().replace(/\s+/g," ")).join("::");
 }
 async function importExcel(file) {
   if (!ensureXlsx()) return;
+  const targetSemester = activeSemester();
+  if (!targetSemester) {
+    alert("Create or select a semester before importing applications.");
+    return;
+  }
   try {
     const workbook = XLSX.read(await file.arrayBuffer(), { type:"array", cellDates:true });
     const parsedSheets = [];
@@ -202,10 +198,7 @@ async function importExcel(file) {
         if (!rawValues.some(value => String(value ?? "").trim())) return;
         const status = normalizeStatus(read("status"));
         if (status.defaulted) defaultedStatuses++;
-        let semesterName = String(read("semester") ?? "").trim();
-        if (!semesterName && parsedSheets.length > 1) semesterName = sheetName;
         records.push({
-          semesterName: semesterName || activeSemester().name,
           application: {
             id:crypto.randomUUID(),
             professor:String(read("professor") ?? "").trim() || "Unknown professor",
@@ -221,12 +214,11 @@ async function importExcel(file) {
       });
     });
     if (!records.length) { alert("The workbook contains headers but no application rows."); return; }
-    const semesterNames = [...new Set(records.map(record => record.semesterName))];
     const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Pending.` : "";
-    if (!confirm(`Import ${records.length} application(s) into ${semesterNames.length} semester(s)? Existing matches will be enriched instead of duplicated.${warning}`)) return;
+    if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Existing matches will be enriched instead of duplicated.${warning}`)) return;
     let added = 0, enriched = 0;
     records.forEach(record => {
-      const applications = getOrCreateSemester(record.semesterName).applications;
+      const applications = targetSemester.applications;
       const existing = applications.find(application => applicationMatchKey(application) === applicationMatchKey(record.application));
       if (!existing) {
         applications.push(record.application);
@@ -261,10 +253,19 @@ async function importExcel(file) {
 
 function render() {
   const semester = activeSemester();
-  el("semesterSelect").innerHTML = state.semesters.map(s => `<option value="${s.id}" ${s.id===semester.id?"selected":""}>${escapeHtml(s.name)}</option>`).join("");
-  renderStats(semester.applications);
-  renderRows(semester.applications);
-  el("deleteSemesterBtn").disabled = state.semesters.length === 1;
+  el("semesterSelect").innerHTML = state.semesters.map(s => `<option value="${s.id}" ${s.id===semester?.id?"selected":""}>${escapeHtml(s.name)}</option>`).join("");
+  el("semesterSelect").disabled = !semester;
+  el("renameSemesterBtn").disabled = !semester;
+  el("deleteSemesterBtn").disabled = !semester;
+  el("addApplicationBtn").disabled = !semester;
+  el("exportExcelBtn").disabled = !semester;
+  el("importExcelInput").disabled = !semester;
+  el("importExcelLabel").classList.toggle("disabled", !semester);
+  el("searchInput").disabled = !semester;
+  el("statusFilter").disabled = !semester;
+  el("sortSelect").disabled = !semester;
+  renderStats(semester?.applications || []);
+  renderRows(semester?.applications || [], !semester);
 }
 function renderStats(apps) {
   const positive = apps.filter(a => a.status.startsWith("Positive")).length;
@@ -274,7 +275,7 @@ function renderStats(apps) {
     [apps.length,"Total applications"], [waiting,"Awaiting response"], [positive,"Positive replies"], [rejected,"Closed / rejected"]
   ].map(([value,label]) => `<div class="stat"><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div>`).join("");
 }
-function renderRows(apps) {
+function renderRows(apps, noSemester = false) {
   const query = el("searchInput").value.trim().toLowerCase();
   const filter = el("statusFilter").value;
   const sort = el("sortSelect").value;
@@ -301,9 +302,9 @@ function renderRows(apps) {
   </tr>`).join("");
   const isActuallyEmpty = apps.length === 0;
   el("emptyState").hidden = visible.length !== 0;
-  el("emptyState").querySelector("h2").textContent = isActuallyEmpty ? "No applications yet" : "No matching applications";
-  el("emptyState").querySelector("p").textContent = isActuallyEmpty ? "Start this semester by adding your first professor." : "Try changing your search or status filter.";
-  el("emptyState").querySelector("button").hidden = !isActuallyEmpty;
+  el("emptyState").querySelector("h2").textContent = noSemester ? "No semester yet" : isActuallyEmpty ? "No applications yet" : "No matching applications";
+  el("emptyState").querySelector("p").textContent = noSemester ? "Create a semester before adding or importing applications." : isActuallyEmpty ? "Start this semester by adding your first professor." : "Try changing your search or status filter.";
+  el("emptyState").querySelector("button").hidden = noSemester || !isActuallyEmpty;
 }
 
 function renderContactHistory() {
@@ -315,7 +316,9 @@ function renderContactHistory() {
   </div>`).join("") : `<div class="history-empty">No contact history yet.</div>`;
 }
 function openApplication(id = null, focusHistory = false) {
-  const app = id ? activeSemester().applications.find(a => a.id === id) : null;
+  const semester = activeSemester();
+  if (!semester) return;
+  const app = id ? semester.applications.find(a => a.id === id) : null;
   el("applicationDialogTitle").textContent = app ? "Edit application" : "Add application";
   el("applicationId").value = app?.id || "";
   el("professorInput").value = app?.professor || "";
@@ -347,24 +350,28 @@ document.querySelector(".add-from-empty").addEventListener("click", () => openAp
 el("applicationForm").addEventListener("submit", event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
+  const semester = activeSemester();
+  if (!semester) return;
   const id = el("applicationId").value;
   const record = { id:id || crypto.randomUUID(), professor:el("professorInput").value.trim(), email:el("emailInput").value.trim(), school:el("schoolInput").value.trim(), status:el("applicationStatus").value, updated:el("dateInput").value, field:el("fieldInput").value.trim(), notes:el("notesInput").value.trim(), contactHistory:draftContactHistory };
-  const apps = activeSemester().applications;
+  const apps = semester.applications;
   const index = apps.findIndex(a => a.id === id);
   if (index >= 0) apps[index] = record; else apps.push(record);
   el("applicationDialog").close();
   saveState(index >= 0 ? "Application updated" : "Application added");
 });
 el("applicationRows").addEventListener("click", event => {
+  const semester = activeSemester();
+  if (!semester) return;
   const edit = event.target.closest(".edit-button");
   const history = event.target.closest(".history-button");
   const remove = event.target.closest(".delete-button");
   if (edit) openApplication(edit.dataset.id);
   if (history) openApplication(history.dataset.id, true);
   if (remove) {
-    const app = activeSemester().applications.find(a => a.id === remove.dataset.id);
+    const app = semester.applications.find(a => a.id === remove.dataset.id);
     if (app && confirm(`Delete the application for ${app.professor}?`)) {
-      activeSemester().applications = activeSemester().applications.filter(a => a.id !== app.id);
+      semester.applications = semester.applications.filter(a => a.id !== app.id);
       saveState("Application deleted");
     }
   }
@@ -391,23 +398,23 @@ el("contactHistoryList").addEventListener("click", event => {
   draftContactHistory = draftContactHistory.filter(item => item.id !== remove.dataset.historyId);
   renderContactHistory();
 });
-["searchInput","statusFilter","sortSelect"].forEach(id => el(id).addEventListener(id==="searchInput"?"input":"change", () => renderRows(activeSemester().applications)));
+["searchInput","statusFilter","sortSelect"].forEach(id => el(id).addEventListener(id==="searchInput"?"input":"change", () => renderRows(activeSemester()?.applications || [], !activeSemester())));
 el("semesterSelect").addEventListener("change", event => { state.activeSemesterId = event.target.value; saveState(); });
 el("addSemesterBtn").addEventListener("click", () => { semesterMode="add"; el("semesterDialogTitle").textContent="New semester"; el("semesterNameInput").value=""; el("semesterDialog").showModal(); });
-el("renameSemesterBtn").addEventListener("click", () => { semesterMode="rename"; el("semesterDialogTitle").textContent="Rename semester"; el("semesterNameInput").value=activeSemester().name; el("semesterDialog").showModal(); });
+el("renameSemesterBtn").addEventListener("click", () => { const semester=activeSemester(); if (!semester) return; semesterMode="rename"; el("semesterDialogTitle").textContent="Rename semester"; el("semesterNameInput").value=semester.name; el("semesterDialog").showModal(); });
 el("semesterForm").addEventListener("submit", event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const name = el("semesterNameInput").value.trim();
-  if (semesterMode === "rename") activeSemester().name = name;
+  if (semesterMode === "rename") { const semester=activeSemester(); if (!semester) return; semester.name = name; }
   else { const semester={id:crypto.randomUUID(),name,applications:[]}; state.semesters.push(semester); state.activeSemesterId=semester.id; }
   el("semesterDialog").close(); saveState(semesterMode === "rename" ? "Semester renamed" : "Semester added");
 });
 el("deleteSemesterBtn").addEventListener("click", () => {
-  if (state.semesters.length === 1) return;
   const semester = activeSemester();
+  if (!semester) return;
   if (confirm(`Delete ${semester.name} and all ${semester.applications.length} of its applications?`)) {
-    state.semesters = state.semesters.filter(s => s.id !== semester.id); state.activeSemesterId=state.semesters[0].id; saveState("Semester deleted");
+    state.semesters = state.semesters.filter(s => s.id !== semester.id); state.activeSemesterId=state.semesters[0]?.id || null; saveState("Semester deleted");
   }
 });
 el("exportExcelBtn").addEventListener("click", exportExcel);
@@ -422,7 +429,7 @@ el("exportJsonBtn").addEventListener("click", () => {
 });
 el("importJsonInput").addEventListener("change", async event => {
   const file = event.target.files[0]; if (!file) return;
-  try { const imported=JSON.parse(await file.text()); if (!imported.semesters?.length) throw new Error(); if (confirm("Replace your current tracker with this imported data?")) { state=imported; saveState("Data imported"); } } catch (_) { alert("This file is not a valid Research Tracker export."); }
+  try { const imported=JSON.parse(await file.text()); if (!Array.isArray(imported?.semesters)) throw new Error(); if (confirm("Replace your current tracker with this imported data?")) { state=imported; saveState("Data imported"); } } catch (_) { alert("This file is not a valid Research Tracker export."); }
   event.target.value="";
 });
 document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("click", e => { if (e.target===dialog) dialog.close(); }));
