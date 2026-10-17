@@ -426,4 +426,7 @@ el("importJsonInput").addEventListener("change", async event => {
   event.target.value="";
 });
 document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("click", e => { if (e.target===dialog) dialog.close(); }));
+document.querySelectorAll(".dialog-close").forEach(button => button.addEventListener("click", () => {
+  button.closest("dialog")?.close("cancel");
+}));
 render();

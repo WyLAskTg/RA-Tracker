@@ -75,7 +75,7 @@
 
   <dialog id="applicationDialog" class="modal">
     <form id="applicationForm" method="dialog">
-      <div class="modal-head"><div><p class="section-label">APPLICATION DETAILS</p><h2 id="applicationDialogTitle">Add application</h2></div><button class="close-button" value="cancel" formnovalidate aria-label="Close">×</button></div>
+      <div class="modal-head"><div><p class="section-label">APPLICATION DETAILS</p><h2 id="applicationDialogTitle">Add application</h2></div><button type="button" class="close-button dialog-close" aria-label="Close">×</button></div>
       <input id="applicationId" type="hidden">
       <div class="form-grid">
         <label>Professor name<input id="professorInput" required maxlength="100" placeholder="e.g. Dr. Jane Smith"></label>
@@ -99,15 +99,15 @@
           <div id="contactHistoryList" class="history-list"></div>
         </section>
       </div>
-      <div class="modal-actions"><button class="button ghost" value="cancel" formnovalidate>Cancel</button><button id="saveApplicationBtn" class="button primary" value="default">Save application</button></div>
+      <div class="modal-actions"><button type="button" class="button ghost dialog-close">Cancel</button><button type="submit" id="saveApplicationBtn" class="button primary" value="default">Save application</button></div>
     </form>
   </dialog>
 
   <dialog id="semesterDialog" class="modal small-modal">
     <form id="semesterForm" method="dialog">
-      <div class="modal-head"><div><p class="section-label">TERM</p><h2 id="semesterDialogTitle">New semester</h2></div><button class="close-button" value="cancel" formnovalidate aria-label="Close">×</button></div>
+      <div class="modal-head"><div><p class="section-label">TERM</p><h2 id="semesterDialogTitle">New semester</h2></div><button type="button" class="close-button dialog-close" aria-label="Close">×</button></div>
       <label>Semester name<input id="semesterNameInput" required maxlength="60" placeholder="e.g. Fall 2026"></label>
-      <div class="modal-actions"><button class="button ghost" value="cancel" formnovalidate>Cancel</button><button class="button primary" value="default">Save semester</button></div>
+      <div class="modal-actions"><button type="button" class="button ghost dialog-close">Cancel</button><button type="submit" class="button primary" value="default">Save semester</button></div>
     </form>
   </dialog>
 
