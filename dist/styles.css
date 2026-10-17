@@ -22,6 +22,9 @@ button, select { cursor: pointer; }
 .import-label.disabled { pointer-events:none; }
 .button.primary { background:var(--green); color:#fff; border-color:var(--green); }
 .button.ghost { background:transparent; }
+.outline-action { border-width:1.5px; }
+.positive-outline { color:var(--green); border-color:rgba(31,89,75,.48); }
+.positive-outline:hover { background:rgba(31,89,75,.055); }
 .import-label input { display:none; }
 main { padding: 44px clamp(18px, 5vw, 72px) 70px; }
 .section-label { color:#77877f; font-size:11px; letter-spacing:.18em; font-weight:800; margin:0 0 15px; }
