@@ -111,6 +111,22 @@ tbody tr:hover { background:#faf9f3; }
 .small-modal { width:min(450px,calc(100% - 28px)); }
 .toast { position:fixed; bottom:22px; left:50%; transform:translate(-50%,20px); background:var(--ink); color:white; border-radius:9px; padding:11px 16px; opacity:0; pointer-events:none; transition:.25s; z-index:50; }
 .toast.show { opacity:1; transform:translate(-50%,0); }
+.account-actions { display:flex; align-items:center; gap:10px; }
+.account-email { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:12px; }
+.account-button { text-decoration:none; }
+.sync-status { margin:13px 0 -3px; color:#7c8b85; font-size:11px; text-align:right; }
+.reminder-panel { position:fixed; right:22px; bottom:22px; z-index:45; width:min(390px,calc(100vw - 28px)); max-height:min(560px,calc(100vh - 44px)); overflow:auto; padding:21px; border:1px solid rgba(43,88,73,.22); border-radius:16px; background:#fffef9; box-shadow:0 20px 60px rgba(19,50,41,.2); }
+.reminder-panel[hidden] { display:none; }
+.reminder-panel h2 { margin:5px 36px 15px 0; font:800 20px Manrope,sans-serif; }
+.reminder-close { position:absolute; top:13px; right:13px; width:32px; height:32px; display:grid; place-items:center; border:0; border-radius:50%; background:transparent; color:#61726b; font-size:23px; cursor:pointer; }
+.reminder-close:hover { background:#eef1e8; color:var(--ink); }
+.reminder-list { display:grid; gap:8px; }
+.reminder-item { width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px; border:1px solid #e2e5dc; border-radius:10px; background:#faf9f3; color:var(--ink); text-align:left; cursor:pointer; }
+.reminder-item:hover { border-color:#91aa9e; background:#f4f6ed; }
+.reminder-item span:first-child { min-width:0; display:grid; gap:3px; }
+.reminder-item strong { overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+.reminder-item small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:11px; }
+.reminder-age { flex:0 0 auto; min-width:38px; padding:5px 7px; border-radius:99px; background:#fff0bd; color:#8a651d; font-size:11px; font-weight:800; text-align:center; }
 @media (max-width:850px) {
   .backup-action { display:none; }
   .hero-stamp { display:none; }
@@ -134,6 +150,8 @@ tbody tr:hover { background:#faf9f3; }
   .topbar { padding:0 15px; }
   .header-actions { gap:5px; }
   .header-actions .button { padding:9px 10px; font-size:12px; }
+  .account-email { display:none; }
+  .account-button { display:none; }
   main { padding-inline:12px; }
   main { padding-top:20px; }
   .semester-bar { padding:22px; align-items:start; gap:15px; }
@@ -147,4 +165,5 @@ tbody tr:hover { background:#faf9f3; }
   .contact-composer,.history-item { grid-template-columns:1fr; }
   .contact-summary,.composer-actions { grid-column:auto; }
   .history-remove { justify-self:start; }
+  .reminder-panel { right:14px; bottom:14px; }
 }

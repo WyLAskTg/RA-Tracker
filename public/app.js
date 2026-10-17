@@ -3,6 +3,8 @@ const STATUSES = [
   "Rejected-Weak background", "Positive-funded", "Positive-unfunded", "Withdrawn"
 ];
 const STORAGE_KEY = "research-application-tracker-v1";
+const API_URL = "/api/state";
+const REMINDER_AFTER_DAYS = 7;
 const EXCEL_HEADERS = ["Professor", "Email", "School", "Status", "Last Updated", "Research Field", "Notes", "Contact History", "Semester"];
 const HEADER_ALIASES = {
   professor: ["professor", "professor name", "faculty", "faculty name", "pi", "advisor", "supervisor", "contact", "教授", "教授名", "导师"],
@@ -21,12 +23,14 @@ const defaultState = () => ({
   semesters: [{ id: "semester-1", name: "Fall 2026", applications: [] }]
 });
 
-let state = loadState();
+let state = defaultState();
+let dataReady = false;
+let persistQueue = Promise.resolve();
 let semesterMode = "add";
 let draftContactHistory = [];
 const el = id => document.getElementById(id);
 
-function loadState() {
+function loadLocalState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (saved && Array.isArray(saved.semesters)) return saved;
@@ -36,7 +40,44 @@ function loadState() {
 function saveState(message) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   render();
+  queuePersistence();
   if (message) toast(message);
+}
+function queuePersistence() {
+  const snapshot = JSON.stringify(state);
+  el("syncStatus").textContent = "Saving…";
+  persistQueue = persistQueue.then(async () => {
+    const response = await fetch(API_URL, { method:"PUT", headers:{"content-type":"application/json"}, body:JSON.stringify({state:JSON.parse(snapshot)}) });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Could not save your data.");
+    el("syncStatus").textContent = "Saved to your account";
+  }).catch(error => {
+    console.error(error);
+    el("syncStatus").textContent = "Save failed — changes remain on this device";
+  });
+}
+async function initializeAccount() {
+  try {
+    const response = await fetch(API_URL, { cache:"no-store" });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Could not load your data.");
+    const payload = await response.json();
+    const local = loadLocalState();
+    if (payload.exists && payload.state && Array.isArray(payload.state.semesters)) {
+      state = payload.state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      el("syncStatus").textContent = "Saved to your account";
+    } else {
+      state = local;
+      el("syncStatus").textContent = "Moving this device’s data to your account…";
+      queuePersistence();
+    }
+  } catch (error) {
+    console.error(error);
+    state = loadLocalState();
+    el("syncStatus").textContent = "Offline mode — changes remain on this device";
+  }
+  dataReady = true;
+  render();
+  showLoginReminders();
 }
 function activeSemester() {
   return state.semesters.find(s => s.id === state.activeSemesterId) || state.semesters[0] || null;
@@ -48,6 +89,31 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("en", {year:"numeric",month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(value + "T00:00:00Z"));
 }
 function today() { return new Date().toLocaleDateString("en-CA"); }
+function daysSince(value) {
+  if (!value) return 0;
+  const then = new Date(`${value}T00:00:00`);
+  const now = new Date(`${today()}T00:00:00`);
+  return Math.max(0, Math.floor((now - then) / 86400000));
+}
+function latestActivityDate(application) {
+  const dates = [application.updated, ...(application.contactHistory || []).map(item => item.date)].filter(Boolean).sort();
+  return dates.at(-1) || application.updated || today();
+}
+function dueReminders() {
+  return state.semesters.flatMap(semester => semester.applications
+    .filter(application => ["Pending", "Follow-up sent"].includes(application.status))
+    .map(application => ({ semester, application, days:daysSince(latestActivityDate(application)) }))
+    .filter(item => item.days >= REMINDER_AFTER_DAYS))
+    .sort((a,b) => b.days - a.days);
+}
+function showLoginReminders() {
+  const reminders = dueReminders();
+  const panel = el("reminderPanel");
+  if (!reminders.length) { panel.hidden = true; return; }
+  el("reminderTitle").textContent = `${reminders.length} ${reminders.length === 1 ? "application needs" : "applications need"} attention`;
+  el("reminderList").innerHTML = reminders.map(({semester,application,days}) => `<button class="reminder-item" type="button" data-semester-id="${semester.id}" data-application-id="${application.id}"><span><strong>${escapeHtml(application.professor)}</strong><small>${escapeHtml(semester.name)} · ${escapeHtml(application.school)}</small></span><span class="reminder-age">${days}d</span></button>`).join("");
+  panel.hidden = false;
+}
 function serializeContactHistory(history = []) {
   return history.map(item => `${item.date || ""} | ${item.type || "Other"} | ${item.summary || ""}`).join("\n");
 }
@@ -254,15 +320,16 @@ async function importExcel(file) {
 function render() {
   const semester = activeSemester();
   el("semesterSelect").innerHTML = state.semesters.map(s => `<option value="${s.id}" ${s.id===semester?.id?"selected":""}>${escapeHtml(s.name)}</option>`).join("");
-  el("semesterSelect").disabled = !semester;
-  el("renameSemesterBtn").disabled = !semester;
-  el("deleteSemesterBtn").disabled = !semester;
-  el("addApplicationBtn").disabled = !semester;
-  el("importExcelInput").disabled = !semester;
-  el("importExcelLabel").classList.toggle("disabled", !semester);
-  el("searchInput").disabled = !semester;
-  el("statusFilter").disabled = !semester;
-  el("sortSelect").disabled = !semester;
+  el("addSemesterBtn").disabled = !dataReady;
+  el("semesterSelect").disabled = !semester || !dataReady;
+  el("renameSemesterBtn").disabled = !semester || !dataReady;
+  el("deleteSemesterBtn").disabled = !semester || !dataReady;
+  el("addApplicationBtn").disabled = !semester || !dataReady;
+  el("importExcelInput").disabled = !semester || !dataReady;
+  el("importExcelLabel").classList.toggle("disabled", !semester || !dataReady);
+  el("searchInput").disabled = !semester || !dataReady;
+  el("statusFilter").disabled = !semester || !dataReady;
+  el("sortSelect").disabled = !semester || !dataReady;
   renderStats(semester?.applications || []);
   renderRows(semester?.applications || [], !semester);
 }
@@ -425,4 +492,14 @@ document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("c
 document.querySelectorAll(".dialog-close").forEach(button => button.addEventListener("click", () => {
   button.closest("dialog")?.close("cancel");
 }));
+el("closeReminderBtn").addEventListener("click", () => { el("reminderPanel").hidden = true; });
+el("reminderList").addEventListener("click", event => {
+  const item = event.target.closest(".reminder-item");
+  if (!item) return;
+  state.activeSemesterId = item.dataset.semesterId;
+  render();
+  el("reminderPanel").hidden = true;
+  openApplication(item.dataset.applicationId, true);
+});
 render();
+initializeAccount();
