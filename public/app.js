@@ -1,5 +1,5 @@
 const STATUSES = [
-  "Pending", "Follow-up sent", "Rejected-No response", "Rejected-No position",
+  "Not Contacted", "Pending", "Follow-up sent", "Rejected-No response", "Rejected-No position",
   "Rejected-Weak background", "Positive-funded", "Positive-unfunded", "Withdrawn"
 ];
 const STORAGE_KEY = "research-application-tracker-v1";
@@ -174,6 +174,7 @@ function normalizeStatus(value) {
   const compact = raw.toLowerCase().replace(/[^a-z0-9]+/g, "");
   const exact = STATUSES.find(status => status.toLowerCase().replace(/[^a-z0-9]+/g, "") === compact);
   if (exact) return { value: exact, defaulted: false };
+  if (raw.includes("未联系") || compact.includes("notcontacted") || compact.includes("nevercontacted") || compact.includes("notyetcontacted")) return { value: "Not Contacted", defaulted: false };
   if (raw.includes("放弃") || compact.includes("withdraw") || compact.includes("abandon") || compact.includes("cancelled") || compact.includes("canceled")) return { value: "Withdrawn", defaulted: false };
   if (compact.includes("followup")) return { value: "Follow-up sent", defaulted: false };
   if (compact.includes("noresponse") || compact.includes("ghost")) return { value: "Rejected-No response", defaulted: false };
@@ -183,7 +184,7 @@ function normalizeStatus(value) {
   if (compact.includes("funded") || compact.includes("offer")) return { value: "Positive-funded", defaulted: false };
   if (compact.includes("reject") || compact.includes("declin")) return { value: "Rejected-No response", defaulted: false };
   if (compact.includes("pending") || compact.includes("wait") || compact.includes("sent")) return { value: "Pending", defaulted: false };
-  return { value: "Pending", defaulted: true };
+  return { value: "Not Contacted", defaulted: true };
 }
 function normalizeExcelDate(value) {
   if (value instanceof Date && !Number.isNaN(value.valueOf())) return value.toLocaleDateString("en-CA");
@@ -293,7 +294,7 @@ async function importExcel(file) {
       });
     });
     if (!records.length) { alert("The workbook contains headers but no application rows."); return; }
-    const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Pending.` : "";
+    const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Not Contacted.` : "";
     if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Filled Excel cells will update matching applications; blank cells will keep their current values.${warning}`)) return;
     let added = 0, updated = 0;
     records.forEach(record => {

@@ -65,6 +65,7 @@ tbody tr:hover { background:#faf9f3; }
 .notes-cell { color:var(--muted); min-width:180px; max-width:320px; white-space:normal; overflow-wrap:anywhere; line-height:1.45; }
 .badge { display:inline-flex; align-items:center; gap:7px; border-radius:99px; padding:6px 9px; font-size:11px; font-weight:800; white-space:nowrap; }
 .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.status-not-contacted { color:#54656a; background:#e3eaec; }
 .status-pending { color:#8a651d; background:#fff0bd; }
 .status-follow-up-sent { color:#825b13; background:#f6dc91; }
 .status-rejected-no-response { color:#955044; background:#f6d8d2; }
