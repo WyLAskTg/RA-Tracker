@@ -1,6 +1,6 @@
 const STATUSES = [
   "Not Contacted", "Pending", "Follow-up sent", "Rejected-No response", "Rejected-No position",
-  "Rejected-Weak background", "Positive-funded", "Positive-unfunded", "Withdrawn"
+  "Rejected-Weak background", "Positive-pending", "Positive-funded", "Positive-unfunded", "Withdrawn"
 ];
 const STORAGE_KEY = "research-application-tracker-v1";
 const API_URL = "/api/state";
@@ -180,6 +180,7 @@ function normalizeStatus(value) {
   if (compact.includes("noresponse") || compact.includes("ghost")) return { value: "Rejected-No response", defaulted: false };
   if (compact.includes("noposition") || compact.includes("noopening") || compact.includes("unavailable")) return { value: "Rejected-No position", defaulted: false };
   if (compact.includes("weak") || compact.includes("background") || compact.includes("qualification")) return { value: "Rejected-Weak background", defaulted: false };
+  if ((compact.includes("positive") && (compact.includes("pending") || compact.includes("await"))) || compact.includes("fundingpending") || compact.includes("pendingfunding")) return { value: "Positive-pending", defaulted: false };
   if (compact.includes("unfunded") || (compact.includes("positive") && compact.includes("nofund"))) return { value: "Positive-unfunded", defaulted: false };
   if (compact.includes("funded") || compact.includes("offer")) return { value: "Positive-funded", defaulted: false };
   if (compact.includes("reject") || compact.includes("declin")) return { value: "Rejected-No response", defaulted: false };

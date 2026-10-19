@@ -71,6 +71,7 @@ tbody tr:hover { background:#faf9f3; }
 .status-rejected-no-response { color:#955044; background:#f6d8d2; }
 .status-rejected-no-position { color:#a13f4f; background:#f4ced5; }
 .status-rejected-weak-background { color:#7f3c62; background:#eed2e1; }
+.status-positive-pending { color:#584883; background:#e6dff5; }
 .status-positive-funded { color:#146147; background:#ccebd8; }
 .status-positive-unfunded { color:#176367; background:#cde8e7; }
 .status-withdrawn { color:#59645f; background:#e1e5e2; }
