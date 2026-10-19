@@ -13,7 +13,7 @@ const HEADER_ALIASES = {
   status: ["status", "current status", "application status", "progress", "state", "状态", "当前状态", "进度"],
   updated: ["last updated", "updated", "update date", "last contact", "contact date", "date", "最近更新日期", "更新日期", "日期"],
   field: ["research field", "research area", "field", "area", "topic", "research interests", "研究领域", "研究方向", "方向"],
-  notes: ["notes", "note", "comments", "comment", "remarks", "details", "备注", "记录"],
+  notes: ["notes", "note", "comments", "comment", "remarks", "details", "column 1", "column1", "列 1", "列1", "备注", "记录"],
   contactHistory: ["contact history", "communication history", "interaction history", "联系记录", "联系历史"],
   semester: ["semester", "term", "cycle", "application term", "学期", "申请学期"]
 };
