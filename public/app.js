@@ -4,7 +4,7 @@ const STATUSES = [
 ];
 const STORAGE_KEY = "research-application-tracker-v1";
 const API_URL = "/api/state";
-const REMINDER_AFTER_DAYS = 7;
+const REMINDER_AFTER_DAYS = 10;
 const EXCEL_HEADERS = ["Professor", "Email", "School", "Status", "Last Updated", "Research Field", "Notes", "Contact History", "Semester"];
 const HEADER_ALIASES = {
   professor: ["professor", "professor name", "faculty", "faculty name", "pi", "advisor", "supervisor", "contact", "教授", "教授名", "导师"],
