@@ -272,7 +272,7 @@ async function importExcel(file) {
       rows.slice(header.index + 1).forEach(row => {
         const read = key => header.mapping[key] === undefined ? "" : row[header.mapping[key]];
         const provided = Object.fromEntries(["email","status","updated","field","notes","contactHistory"]
-          .map(key => [key, String(read(key) ?? "").trim() !== ""]));
+          .map(key => [key, key === "notes" ? header.mapping.notes !== undefined : String(read(key) ?? "").trim() !== ""]));
         const rawValues = ["professor","email","school","status","updated","field","notes","contactHistory"].map(read);
         if (!rawValues.some(value => String(value ?? "").trim())) return;
         const status = normalizeStatus(read("status"));
@@ -295,7 +295,7 @@ async function importExcel(file) {
     });
     if (!records.length) { alert("The workbook contains headers but no application rows."); return; }
     const warning = defaultedStatuses ? `\n${defaultedStatuses} unrecognized status value(s) will be set to Not Contacted.` : "";
-    if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Filled Excel cells will update matching applications; blank cells will keep their current values.${warning}`)) return;
+    if (!confirm(`Import ${records.length} application(s) into “${targetSemester.name}”? Notes will match the imported Notes cells, including blanks. Other blank cells will keep their current values.${warning}`)) return;
     let added = 0, updated = 0;
     records.forEach(record => {
       const applications = targetSemester.applications;
