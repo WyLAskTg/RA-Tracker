@@ -200,15 +200,8 @@ function normalizeExcelDate(value) {
   const parsed = new Date(text);
   return Number.isNaN(parsed.valueOf()) ? today() : parsed.toLocaleDateString("en-CA");
 }
-function safeSheetName(name, used) {
-  const base = String(name || "Applications").replace(/[\\/?*:[\]]/g, " ").trim().slice(0,31) || "Applications";
-  let candidate = base, counter = 2;
-  while (used.has(candidate.toLowerCase())) {
-    const suffix = ` ${counter++}`;
-    candidate = base.slice(0, 31 - suffix.length) + suffix;
-  }
-  used.add(candidate.toLowerCase());
-  return candidate;
+function safeSheetName(name) {
+  return String(name || "Applications").replace(/[\\/?*:[\]]/g, " ").trim().slice(0,31) || "Applications";
 }
 function ensureXlsx() {
   if (window.XLSX) return true;
@@ -217,33 +210,33 @@ function ensureXlsx() {
 }
 function exportExcel() {
   if (!ensureXlsx()) return;
+  const semester = activeSemester();
+  if (!semester) return;
   const workbook = XLSX.utils.book_new();
-  const usedNames = new Set();
-  state.semesters.forEach(semester => {
-    const rows = semester.applications.map(app => ({
-      "Professor": app.professor,
-      "Email": app.email || "",
-      "School": app.school,
-      "Status": app.status,
-      "Last Updated": app.updated ? new Date(`${app.updated}T00:00:00`) : "",
-      "Research Field": app.field,
-      "Notes": app.notes || "",
-      "Contact History": serializeContactHistory(app.contactHistory),
-      "Semester": semester.name
-    }));
-    const sheet = XLSX.utils.json_to_sheet(rows, { header: EXCEL_HEADERS });
-    sheet["!cols"] = [{wch:24},{wch:30},{wch:28},{wch:28},{wch:15},{wch:28},{wch:45},{wch:55},{wch:16}];
-    if (sheet["!ref"]) {
-      const range = XLSX.utils.decode_range(sheet["!ref"]);
-      for (let row = 1; row <= range.e.r; row++) {
-        const cell = sheet[XLSX.utils.encode_cell({r:row,c:4})];
-        if (cell?.v instanceof Date) cell.z = "yyyy-mm-dd";
-      }
+  const rows = semester.applications.map(app => ({
+    "Professor": app.professor,
+    "Email": app.email || "",
+    "School": app.school,
+    "Status": app.status,
+    "Last Updated": app.updated ? new Date(`${app.updated}T00:00:00`) : "",
+    "Research Field": app.field,
+    "Notes": app.notes || "",
+    "Contact History": serializeContactHistory(app.contactHistory),
+    "Semester": semester.name
+  }));
+  const sheet = XLSX.utils.json_to_sheet(rows, { header: EXCEL_HEADERS });
+  sheet["!cols"] = [{wch:24},{wch:30},{wch:28},{wch:28},{wch:15},{wch:28},{wch:45},{wch:55},{wch:16}];
+  if (sheet["!ref"]) {
+    const range = XLSX.utils.decode_range(sheet["!ref"]);
+    for (let row = 1; row <= range.e.r; row++) {
+      const cell = sheet[XLSX.utils.encode_cell({r:row,c:4})];
+      if (cell?.v instanceof Date) cell.z = "yyyy-mm-dd";
     }
-    XLSX.utils.book_append_sheet(workbook, sheet, safeSheetName(semester.name, usedNames));
-  });
-  XLSX.writeFile(workbook, `research-applications-${today()}.xlsx`, { compression:true, cellDates:true });
-  toast("Excel workbook exported");
+  }
+  XLSX.utils.book_append_sheet(workbook, sheet, safeSheetName(semester.name));
+  const fileTerm = semester.name.replace(/[\\/:*?"<>|]/g, "-").trim() || "term";
+  XLSX.writeFile(workbook, `research-applications-${fileTerm}-${today()}.xlsx`, { compression:true, cellDates:true });
+  toast(`${semester.name} exported to Excel`);
 }
 function applicationMatchKey(application) {
   return [application.professor, application.school].map(value => String(value || "").trim().toLowerCase().replace(/\s+/g," ")).join("::");
@@ -336,6 +329,7 @@ function render() {
   el("addApplicationBtn").disabled = !semester || !dataReady;
   el("importExcelInput").disabled = !semester || !dataReady;
   el("importExcelLabel").classList.toggle("disabled", !semester || !dataReady);
+  el("exportExcelBtn").disabled = !semester || !dataReady;
   el("searchInput").disabled = !semester || !dataReady;
   el("statusFilter").disabled = !semester || !dataReady;
   el("sortSelect").disabled = !semester || !dataReady;
@@ -511,6 +505,7 @@ el("importExcelInput").addEventListener("change", async event => {
   if (file) await importExcel(file);
   event.target.value = "";
 });
+el("exportExcelBtn").addEventListener("click", exportExcel);
 document.querySelectorAll("dialog").forEach(dialog => dialog.addEventListener("click", e => { if (e.target===dialog) dialog.close(); }));
 document.querySelectorAll(".dialog-close").forEach(button => button.addEventListener("click", () => {
   button.closest("dialog")?.close("cancel");

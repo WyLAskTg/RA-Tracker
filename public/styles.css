@@ -138,6 +138,8 @@ tbody tr:hover { background:#faf9f3; }
 .reminder-item small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:11px; }
 .reminder-age { flex:0 0 auto; min-width:38px; padding:5px 7px; border-radius:99px; background:#fff0bd; color:#8a651d; font-size:11px; font-weight:800; text-align:center; }
 @media (max-width:850px) {
+  .semester-bar,.semester-actions { flex-wrap:wrap; }
+  .semester-bar { gap:18px; }
   .backup-action { display:none; }
   .hero-stamp { display:none; }
   .stats { grid-template-columns:1fr 1fr; }
